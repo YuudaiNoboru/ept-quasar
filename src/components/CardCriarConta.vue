@@ -2,7 +2,7 @@
   <div>
     <q-card class="my-card">
       <q-card-section>
-        <q-form class="column q-gutter-lg">
+        <q-form @submit.prevent="OnSubmit" class="column q-gutter-lg">
           <q-input
             v-model="form.nome"
             label="Nome"
@@ -60,7 +60,7 @@
             </template>
           </q-input>
           <div class="row justify-end">
-            <q-btn label="Submit" type="submit" color="primary" />
+            <q-btn label="Criar Conta" type="submit" color="primary" />
           </div>
         </q-form>
       </q-card-section>
@@ -68,26 +68,57 @@
   </div>
 </template>
 
-<script lang="ts">
+<script setup lang="ts">
 import { reactive } from 'vue';
+import { createUser } from 'src/services/user';
+import { useQuasar } from 'quasar';
 
-export default {
-  setup() {
-    const form = reactive({
-      nome: '',
-      email: '',
-      senha: '',
-      senhaRepetida: '',
+const emit = defineEmits(['contaCriada']);
+
+const $q = useQuasar();
+const form = reactive({
+  nome: '',
+  email: '',
+  senha: '',
+  senhaRepetida: '',
+});
+
+const visibility = reactive({
+  senha: true,
+  senhaRepetida: true,
+});
+
+async function OnSubmit() {
+  $q.loading.show({ message: 'Criando sua conta...' });
+
+  try {
+    const payload = {
+      username: form.nome,
+      email: form.email,
+      password: form.senha,
+    };
+
+    const response = await createUser(payload);
+
+    $q.notify({
+      color: 'positive',
+      position: 'top',
+      icon: 'check_circle',
+      message: `Usuário ${response.data.username} criado com sucesso!`,
     });
 
-    const visibility = reactive({
-      senha: true,
-      senhaRepetida: true,
-    });
+    emit('contaCriada');
 
-    return { form, visibility };
-  },
-};
+    form.nome = '';
+    form.email = '';
+    form.senha = '';
+    form.senhaRepetida = '';
+  } catch (error) {
+    console.error('Login falhou:', error);
+  } finally {
+    $q.loading.hide();
+  }
+}
 </script>
 
 <style lang="sass" scoped>

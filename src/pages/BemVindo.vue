@@ -1,19 +1,13 @@
-<script lang="ts">
+<script setup lang="ts">
 import { ref } from 'vue';
 import CardLogin from '../components/CardLogin.vue';
 import CardCriarConta from '../components/CardCriarConta.vue';
 
-export default {
-  components: {
-    CardLogin,
-    CardCriarConta,
-  },
-  setup() {
-    return {
-      tab: ref('login'),
-    };
-  },
-};
+const tab = ref('login');
+
+function irParaLogin() {
+  tab.value = 'login';
+}
 </script>
 
 <template>
@@ -30,7 +24,7 @@ export default {
           narrow-indicator
         >
           <q-tab name="login" label="Login" />
-          <q-tab name="alarms" label="Criar Conta" />
+          <q-tab name="criar-conta" label="Criar Conta" />
         </q-tabs>
 
         <q-separator />
@@ -40,8 +34,8 @@ export default {
             <CardLogin />
           </q-tab-panel>
 
-          <q-tab-panel name="alarms">
-            <CardCriarConta />
+          <q-tab-panel name="criar-conta">
+            <CardCriarConta @contaCriada="irParaLogin" />
           </q-tab-panel>
         </q-tab-panels>
       </q-card>

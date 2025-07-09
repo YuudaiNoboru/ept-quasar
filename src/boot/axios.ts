@@ -1,7 +1,54 @@
 import { defineBoot } from '#q-app/wrappers';
+import type { AxiosError } from 'axios';
 import axios from 'axios';
+import { Notify } from 'quasar';
 
-const api = axios.create({ baseURL: 'https://api.example.com' });
+const API_BASE_URL = process.env.API_BASE_URL || 'http://127.0.0.1:8000';
+
+const api = axios.create({ baseURL: API_BASE_URL });
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('authToken');
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  return config;
+});
+
+api.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error: AxiosError) => {
+    let errorMessage = 'Ocorreu um erro de comunicação com o servidor.';
+
+    if (error.response && error.response.data) {
+      const erroData = error.response.data as {
+        detail?: string | { loc: string[]; msg: string }[];
+      };
+
+      if (typeof erroData.detail === 'string') {
+        errorMessage = erroData.detail;
+      } else if (Array.isArray(erroData.detail)) {
+        const validationErrors = erroData.detail.map((e) => e.msg).join(', ');
+        errorMessage = `Dados inválidos: ${validationErrors}`;
+      } else if (error.request) {
+        errorMessage = 'Não foi possível conectar ao servidor. Verifique sua internet.';
+      }
+
+      Notify.create({
+        color: 'negative',
+        position: 'top',
+        icon: 'report_problem',
+        message: errorMessage,
+      });
+
+      return Promise.reject(error);
+    }
+  },
+);
 
 export default defineBoot(({ app }) => {
   // for use inside Vue files (Options API) through this.$axios and this.$api
