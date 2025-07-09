@@ -24,9 +24,9 @@ api.interceptors.response.use(
   (error: AxiosError) => {
     let errorMessage = 'Ocorreu um erro de comunicação com o servidor.';
 
-    if (error.response && error.response.data) {
+    if (error.response) {
       const erroData = error.response.data as {
-        detail?: string | { loc: string[]; msg: string }[];
+        detail?: any;
       };
 
       if (typeof erroData.detail === 'string') {
@@ -34,19 +34,19 @@ api.interceptors.response.use(
       } else if (Array.isArray(erroData.detail)) {
         const validationErrors = erroData.detail.map((e) => e.msg).join(', ');
         errorMessage = `Dados inválidos: ${validationErrors}`;
-      } else if (error.request) {
-        errorMessage = 'Não foi possível conectar ao servidor. Verifique sua internet.';
       }
-
-      Notify.create({
-        color: 'negative',
-        position: 'top',
-        icon: 'report_problem',
-        message: errorMessage,
-      });
-
-      return Promise.reject(error);
+    } else if (error.request) {
+      errorMessage = 'Não foi possível conectar ao servidor. Verifique sua internet.';
     }
+
+    Notify.create({
+      color: 'negative',
+      position: 'top',
+      icon: 'report_problem',
+      message: errorMessage,
+    });
+
+    return Promise.reject(error);
   },
 );
 
