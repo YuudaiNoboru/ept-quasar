@@ -14,7 +14,23 @@
     </q-header>
 
     <q-drawer show-if-above v-model="leftDrawerOpen" side="left" bordered>
-      <!-- drawer content -->
+      <q-list>
+        <q-item-label header>Menu</q-item-label>
+
+        <q-item clickable v-ripple to="/disciplinas">
+          <q-item-section avatar>
+            <q-icon name="school" />
+          </q-item-section>
+          <q-item-section> Disciplinas </q-item-section>
+        </q-item>
+
+        <q-item clickable v-ripple to="/concursos">
+          <q-item-section avatar>
+            <q-icon name="work" />
+          </q-item-section>
+          <q-item-section> Concursos </q-item-section>
+        </q-item>
+      </q-list>
     </q-drawer>
 
     <q-page-container>
@@ -27,26 +43,19 @@
           <q-avatar>
             <img src="https://cdn.quasar.dev/logo-v2/svg/logo-mono-white.svg" />
           </q-avatar>
-          <div>Title</div>
+          <div>EPT</div>
         </q-toolbar-title>
       </q-toolbar>
     </q-footer>
   </q-layout>
 </template>
 
-<script lang="ts">
+<script setup lang="ts">
 import { ref } from 'vue';
 
-export default {
-  setup() {
-    const leftDrawerOpen = ref(false);
+const leftDrawerOpen = ref(false);
 
-    return {
-      leftDrawerOpen,
-      toggleLeftDrawer() {
-        leftDrawerOpen.value = !leftDrawerOpen.value;
-      },
-    };
-  },
-};
+function toggleLeftDrawer() {
+  leftDrawerOpen.value = !leftDrawerOpen.value;
+}
 </script>

@@ -26,7 +26,7 @@ api.interceptors.response.use(
 
     if (error.response) {
       const erroData = error.response.data as {
-        detail?: any;
+        detail?: string | { loc: (string | number)[]; msg: string; type: string }[];
       };
 
       if (typeof erroData.detail === 'string') {
