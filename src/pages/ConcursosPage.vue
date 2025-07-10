@@ -101,7 +101,6 @@ const concursos = ref<ConcursoPublicList[]>([]);
 const mostrarDialogo = ref(false);
 const form = reactive({ nome: '', data_prova: '' });
 
-// Estado para a árvore dentro do diálogo
 const loadingTree = ref(false);
 const nodesSelecao = ref<Node[]>([]);
 const tickedNodeKeys = ref<string[]>([]);
@@ -123,16 +122,16 @@ async function carregarConcursos() {
   }
 }
 
-// Lógica de formatação para a árvore de seleção
-const formatarAssuntosRecursivo = (assuntos: IAssunto[]): Node[] => {
+const formatarAssuntosRecursivo = (assuntos: IAssunto[], disciplinaId: number): Node[] => {
   return assuntos.map((assunto) => ({
     key: `assunto_${assunto.id}`,
     label: assunto.nome,
     id: assunto.id,
     type: 'assunto',
+    disciplinaId,
     tickable: true,
     icon: assunto.subassuntos && assunto.subassuntos.length > 0 ? 'folder' : 'article',
-    children: formatarAssuntosRecursivo(assunto.subassuntos),
+    children: formatarAssuntosRecursivo(assunto.subassuntos, disciplinaId),
   }));
 };
 
@@ -150,8 +149,8 @@ async function carregarDadosParaSelecao() {
         id: disciplina.id,
         type: 'disciplina',
         icon: 'school',
-        tickable: discComAssuntos.assuntos.length > 0,
-        children: formatarAssuntosRecursivo(discComAssuntos.assuntos),
+        tickable: true,
+        children: formatarAssuntosRecursivo(discComAssuntos.assuntos, disciplina.id),
       });
     }
     nodesSelecao.value = disciplinasCompletas;
@@ -173,17 +172,45 @@ function onTickedNodesUpdate(keys: string[]) {
 }
 
 async function handleCriarConcurso() {
-  const assuntos_ids = tickedNodeKeys.value
-    .map((key) => {
-      const parts = key.split('_');
-      if (parts[0] === 'assunto' && parts[1]) {
-        return parseInt(parts[1], 10);
-      }
-      return null;
-    })
-    .filter((id): id is number => id !== null);
+  const assuntos_ids = new Set<number>();
+  const disciplinas_ids = new Set<number>();
 
-  if (assuntos_ids.length === 0) {
+  const assuntoParaDisciplinaMap = new Map<string, number>();
+  const popularMapa = (nodes: Node[]) => {
+    nodes.forEach((node) => {
+      if (node.type === 'disciplina' && node.children) {
+        popularMapa(node.children);
+      } else if (node.type === 'assunto' && node.disciplinaId) {
+        assuntoParaDisciplinaMap.set(node.key, node.disciplinaId);
+        if (node.children) {
+          popularMapa(node.children);
+        }
+      }
+    });
+  };
+  popularMapa(nodesSelecao.value);
+
+  tickedNodeKeys.value.forEach((key) => {
+    const parts = key.split('_');
+    const type = parts[0];
+    const idStr = parts[1];
+
+    // CORREÇÃO: Verificamos se idStr existe antes de o usar
+    if (idStr) {
+      const id = parseInt(idStr, 10);
+      if (type === 'assunto') {
+        assuntos_ids.add(id);
+        const disciplinaId = assuntoParaDisciplinaMap.get(key);
+        if (disciplinaId) {
+          disciplinas_ids.add(disciplinaId);
+        }
+      } else if (type === 'disciplina') {
+        disciplinas_ids.add(id);
+      }
+    }
+  });
+
+  if (assuntos_ids.size === 0) {
     $q.notify({
       color: 'warning',
       icon: 'warning',
@@ -195,8 +222,8 @@ async function handleCriarConcurso() {
   const payload = {
     nome: form.nome,
     data_prova: form.data_prova ? form.data_prova.replace(/\//g, '-') : null,
-    disciplinas_ids: [],
-    assuntos_ids: assuntos_ids,
+    disciplinas_ids: Array.from(disciplinas_ids),
+    assuntos_ids: Array.from(assuntos_ids),
   };
 
   $q.loading.show({ message: 'Salvando concurso...' });
